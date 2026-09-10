@@ -1167,3 +1167,7 @@ el('startbtn').addEventListener('click', () => {
   startMission1();
   showToast('ようこそ、ウメさん。今日は回覧板の日だ。', 6);
 });
+
+// debug/verify handle
+window.__gt = { player, tanaka, tane, vehicles, get mission(){ return mission; }, get missionPhase(){ return missionPhase; },
+  doInteract, enterVehicle, useWeapon, calmTanaka, knockDown, knockables, get running(){ return running; } };
