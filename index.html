@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GRANDMA THEFT: SENIOR SCOOTER - おばあちゃんゲーム</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,"Yu Gothic",sans-serif; }
+  #c { position:fixed; inset:0; display:block; }
+  .hud { position:fixed; z-index:10; pointer-events:none; user-select:none; -webkit-user-select:none; }
+
+  /* money top-right */
+  #money { top:18px; right:26px; font-size:30px; font-weight:800; color:#fff;
+    text-shadow:2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; letter-spacing:1px; }
+
+  /* minimap bottom-left */
+  #mapwrap { left:22px; bottom:22px; width:190px; height:190px; }
+  #minimap { width:190px; height:190px; border-radius:50%; border:3px solid rgba(0,0,0,.55);
+    box-shadow:0 0 0 2px rgba(255,255,255,.25), 0 4px 14px rgba(0,0,0,.5); background:#223420; }
+  #wanted { position:absolute; left:0; right:0; top:-30px; text-align:center; font-size:22px; letter-spacing:6px;
+    color:#ffd34d; text-shadow:1px 1px 0 #000; display:none; }
+  #healthwrap { position:absolute; left:200px; bottom:8px; display:flex; align-items:center; gap:6px; }
+  #heart { font-size:20px; color:#ff5566; text-shadow:1px 1px 0 #000; }
+  #healthbar { width:130px; height:10px; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.35); border-radius:5px; overflow:hidden; }
+  #health { height:100%; width:100%; background:linear-gradient(90deg,#59d867,#a7f36b); }
+
+  /* weapon icons bottom-right */
+  #weapons { right:22px; bottom:22px; display:flex; gap:10px; align-items:flex-end; }
+  .wslot { width:46px; height:46px; border-radius:50%; background:rgba(20,20,24,.72); border:2px solid rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff;
+    text-shadow:1px 1px 0 #000; opacity:.55; }
+  .wslot.cur { border-color:#ffd34d; opacity:1; box-shadow:0 0 12px rgba(255,211,77,.45); }
+  #wname { position:absolute; right:0; bottom:52px; width:100%; text-align:right; font-size:14px; color:#fff;
+    text-shadow:1px 1px 0 #000; white-space:nowrap; }
+
+  /* mission objective bottom-center */
+  #objective { left:50%; bottom:26px; transform:translateX(-50%); font-size:26px; font-weight:800; color:#fff;
+    -webkit-text-stroke:1px #c02a1e; text-shadow:0 0 3px #c02a1e, 2px 2px 0 #7c130b; letter-spacing:2px; white-space:nowrap; display:none; }
+  #objective .en { display:block; font-size:12px; font-weight:600; color:#ffd9d4; -webkit-text-stroke:0; text-shadow:1px 1px 0 #000; text-align:center; letter-spacing:3px; }
+
+  /* tutorial toast top-left */
+  #toast { left:22px; top:20px; background:rgba(10,10,14,.78); border:1px solid rgba(255,255,255,.2);
+    color:#fff; font-size:16px; padding:10px 16px; border-radius:3px; max-width:330px; line-height:1.5; display:none; }
+  #toast b { color:#ffd34d; }
+
+  /* interact prompt center */
+  #prompt { left:50%; top:56%; transform:translateX(-50%); text-align:center; display:none; }
+  #prompt .key { display:inline-flex; width:44px; height:44px; border-radius:50%; border:3px solid #fff;
+    align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#fff;
+    text-shadow:1px 1px 0 #000; box-shadow:0 0 10px rgba(0,0,0,.6); background:rgba(0,0,0,.35); }
+  #prompt .label { margin-top:6px; font-size:20px; font-weight:700; color:#fff; text-shadow:2px 2px 0 #000; }
+
+  /* dialogue box */
+  #dialog { left:50%; bottom:90px; transform:translateX(-50%); width:min(680px,92vw);
+    background:rgba(8,8,12,.85); border:2px solid rgba(255,255,255,.28); border-radius:6px;
+    padding:14px 22px; color:#fff; font-size:19px; line-height:1.55; display:none; }
+  #dialog .who { color:#ffd34d; font-weight:800; margin-bottom:4px; font-size:16px; letter-spacing:2px; }
+
+  /* weapon wheel */
+  #wheel { inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); z-index:40; }
+  #wheel .panel { background:rgba(12,12,16,.92); border:1px solid rgba(255,255,255,.2); border-radius:10px; overflow:hidden; min-width:300px; }
+  #wheel .item { display:flex; align-items:center; gap:14px; padding:13px 26px; color:#ddd; font-size:18px; cursor:pointer; pointer-events:auto; }
+  #wheel .item .ic { font-size:24px; width:34px; text-align:center; }
+  #wheel .item.sel { background:linear-gradient(90deg,#8a6d1f,#5c4a12); color:#fff; font-weight:700; }
+
+  /* big banners */
+  #banner { inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:60; background:rgba(0,0,0,.25); }
+  #banner .big { font-size:min(84px,11vw); font-weight:900; letter-spacing:4px; font-family:Impact,"Arial Black",sans-serif; }
+  #banner.pass .big { color:#f5c542; -webkit-text-stroke:2px #1c3d12; text-shadow:0 4px 0 #1c3d12, 0 8px 24px rgba(0,0,0,.8); }
+  #banner.fail .big { color:#d23c2a; -webkit-text-stroke:2px #2a0a05; text-shadow:0 4px 0 #2a0a05, 0 8px 24px rgba(0,0,0,.8); }
+  #banner .sub { margin-top:14px; font-size:22px; color:#fff; font-weight:700; text-shadow:2px 2px 0 #000; }
+
+  /* title screen */
+  #title { inset:0; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at 50% 30%, #2b4a63 0%, #14202e 55%, #0a0f16 100%); }
+  #title .jp { color:#e8b4b8; font-size:20px; letter-spacing:10px; margin-bottom:10px; font-weight:600; }
+  #title h1 { font-family:Impact,"Arial Black",sans-serif; color:#fff; text-align:center; line-height:.95;
+    font-size:min(72px,10vw); letter-spacing:3px; -webkit-text-stroke:2px #111;
+    text-shadow:0 5px 0 #8c1d12, 0 10px 30px rgba(0,0,0,.7); }
+  #title h1 .y { color:#f5c542; }
+  #title .scooter { font-size:54px; margin:18px 0 4px; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+  #title .tag { color:#9fb7c9; font-size:15px; margin-top:6px; letter-spacing:2px; }
+  #startbtn { margin-top:34px; pointer-events:auto; cursor:pointer; font-size:22px; font-weight:800; letter-spacing:4px;
+    color:#111; background:linear-gradient(180deg,#ffd34d,#e0a41c); border:none; padding:14px 58px; border-radius:4px;
+    box-shadow:0 6px 0 #7a5a10, 0 10px 24px rgba(0,0,0,.5); }
+  #startbtn:active { transform:translateY(4px); box-shadow:0 2px 0 #7a5a10; }
+  #title .keys { margin-top:26px; color:#7d93a5; font-size:13px; line-height:1.9; text-align:center; }
+  #title .credit { position:absolute; bottom:16px; right:20px; color:#54687a; font-size:11px; letter-spacing:1px; }
+
+  #vignette { inset:0; z-index:5; background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.38) 100%); }
+  #fade { inset:0; z-index:80; background:#000; opacity:0; transition:opacity .5s; }
+
+  /* touch controls */
+  #stick { display:none; position:fixed; z-index:30; width:120px; height:120px; border-radius:50%;
+    background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.25); }
+  #knob { position:absolute; left:35px; top:35px; width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,.35); }
+  #actbtn { display:none; position:fixed; right:26px; bottom:120px; z-index:30; width:74px; height:74px; border-radius:50%;
+    background:rgba(255,211,77,.25); border:3px solid #ffd34d; color:#fff; font-size:26px; font-weight:900;
+    align-items:center; justify-content:center; text-shadow:1px 1px 0 #000; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vignette" class="hud"></div>
+
+<div id="money" class="hud">3,000円</div>
+
+<div id="mapwrap" class="hud">
+  <div id="wanted">★★★</div>
+  <canvas id="minimap" width="380" height="380"></canvas>
+  <div id="healthwrap"><span id="heart">♥</span><div id="healthbar"><div id="health"></div></div></div>
+</div>
+
+<div id="weapons" class="hud">
+  <div class="wslot" data-w="0">🔫</div>
+  <div class="wslot" data-w="1">🧸</div>
+  <div class="wslot" data-w="2">⛏️</div>
+  <div class="wslot" data-w="3">🌾</div>
+  <div class="wslot" data-w="4">💩</div>
+</div>
+
+<div id="objective" class="hud"></div>
+<div id="toast" class="hud"></div>
+<div id="prompt" class="hud"><span class="key">E</span><div class="label"></div></div>
+<div id="dialog" class="hud"><div class="who"></div><div class="line"></div></div>
+
+<div id="wheel" class="hud"><div class="panel"></div></div>
+
+<div id="banner" class="hud"><div class="big"></div><div class="sub"></div></div>
+
+<div id="title" class="hud">
+  <div class="jp">お ば あ ち ゃ ん ゲ ー ム</div>
+  <h1>GRANDMA THEFT<br><span class="y">SENIOR SCOOTER</span></h1>
+  <div class="scooter">👵🛵</div>
+  <div class="tag">RURAL JAPAN · POP. 12 · ONE VERY BUSY AFTERNOON</div>
+  <button id="startbtn">始める</button>
+  <div class="keys">WASD 移動 · マウス カメラ · E アクション/乗る · SHIFT ダッシュ/早漕ぎ<br>TAB 武器ホイール · 左クリック 武器を使う</div>
+  <div class="credit">inspired by “Grandma Theft Senior Scooter” (AI動画ラボコイコイ / Pollo AI × Seedance 2.5)</div>
+</div>
+
+<div id="fade" class="hud"></div>
+<div id="stick"><div id="knob"></div></div>
+<div id="actbtn">E</div>
+
+<script type="module" src="game.js"></script>
+</body>
+</html>
