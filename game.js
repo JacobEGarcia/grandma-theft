@@ -863,8 +863,9 @@ function doInteract(){
 }
 function enterVehicle(v){
   player.vehicle = v; player.g.visible = false;
-  if (v.userData.type === 'bicycle') showToast('<b>SHIFT</b> 長押しで早漕ぎ。', 4);
-  if (v.userData.type === 'truck' && mission === 4 && missionPhase === 0) m4Rampage();
+  const ut = v.g.userData.type;
+  if (ut === 'bicycle') showToast('<b>SHIFT</b> 長押しで早漕ぎ。', 4);
+  if (ut === 'truck' && mission === 4 && missionPhase === 0) m4Rampage();
   sfx.pickup();
 }
 function exitVehicle(){
